@@ -1,0 +1,40 @@
+@FirstStepsAspnet_HostAddress = http://localhost:5145
+
+GET {{FirstStepsAspnet_HostAddress}}/api/todoitems/
+Accept: application/json
+
+###
+
+GET {{FirstStepsAspnet_HostAddress}}/api/TodoItems/1
+Accept: application/json
+
+###
+
+POST {{FirstStepsAspnet_HostAddress}}/api/todoitems
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Test todo 1",
+  "isComplete": false
+}
+
+###
+
+PUT {{FirstStepsAspnet_HostAddress}}/api/todoitems/1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Test todo 1 update",
+  "isComplete": true
+}
+
+###
+
+DELETE {{FirstStepsAspnet_HostAddress}}/api/todoitems/2
+Accept: application/json
+
+##
