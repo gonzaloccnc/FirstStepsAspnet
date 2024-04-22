@@ -1,4 +1,5 @@
 ﻿using FirstStepsAspnet.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -14,20 +15,23 @@ namespace FirstStepsAspnet.Controllers
   {
     private readonly TodoContext _todoContext;
     private readonly IConfiguration _configuration;
+    private readonly IPasswordHasher<object> _encoder;
 
-    public AuthController(TodoContext todoContext, IConfiguration configuration)
+    public AuthController(TodoContext todoContext, IConfiguration configuration, IPasswordHasher<object> encoder)
     {
       _todoContext = todoContext;
       _configuration = configuration;
+      _encoder = encoder;
     }
 
     [HttpPost("Register")]
     public async Task<ActionResult<User>> Register(User user)
     {
+      user.Password = _encoder.HashPassword(user, user.Password);
       var userCreated = _todoContext.Users.Add(user);
       await _todoContext.SaveChangesAsync();
 
-      return Created("http://localhost/api/users/1", userCreated.Entity);
+      return Created("http://localhost/api/profile", userCreated.Entity);
     }
 
     [HttpPost("Login")]
@@ -35,16 +39,22 @@ namespace FirstStepsAspnet.Controllers
     {
       var userAuth = await _todoContext.Users
           .Where(u =>
-              u.Username == user.Username && u.Password == user.Password
+              u.Username == user.Username
           )
           .FirstOrDefaultAsync();
 
       if (userAuth == null)
-      {
         return Unauthorized();
-      }
 
-      return Ok(GenerateToken(userAuth));
+
+      var result = _encoder.VerifyHashedPassword(user, userAuth.Password, user.Password);
+
+      if (result == PasswordVerificationResult.Failed)
+        return Unauthorized();
+
+      var token = GenerateToken(userAuth);
+
+      return Ok(new { Token = token });
     }
 
     private string GenerateToken(User user)
@@ -62,7 +72,7 @@ namespace FirstStepsAspnet.Controllers
         issuer: _configuration["JwtSettings:Issuer"],
         audience: _configuration["JwtSettings:Audience"],
         claims: userClaims,
-        expires: DateTime.UtcNow.AddMonths(1),
+        expires: DateTime.UtcNow.AddDays(7),
         signingCredentials: credentials
       );
 

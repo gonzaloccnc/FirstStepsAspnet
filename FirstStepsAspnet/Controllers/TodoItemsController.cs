@@ -24,14 +24,30 @@ namespace FirstStepsAspnet.Controllers
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems()
+    public async Task<ActionResult> GetTodoItems([FromQuery] int page = 0)
     {
+      // all the below or get the user and get the todos property
       var id = User.FindFirst("id")!;
 
-      return await _context.TodoItems
+      // see here two awaits
+      var totalItems = await _context.TodoItems.CountAsync();
+      var items = await _context.TodoItems
           .Where(x => x.UserId == long.Parse(id.Value))
+          .Skip(page * 10)
+          .Take(10)
           .Select(x => ItemToDTO(x))
           .ToListAsync();
+
+      int TotalPages = (int)Math.Ceiling(totalItems / (double)10);
+
+      return Ok(new
+      {
+        Data = items,
+        Hints = items.Count,
+        Page = page,
+        PerPage = 10,
+        TotalPages
+      });
     }
 
     [HttpGet("{id}")]
@@ -71,7 +87,7 @@ namespace FirstStepsAspnet.Controllers
       }
       catch (DbUpdateConcurrencyException)
       {
-        return NotFound();
+        return NotFound(); // ItemToDTO(todoItem)
       }
 
       return NoContent();
@@ -81,7 +97,7 @@ namespace FirstStepsAspnet.Controllers
     public async Task<ActionResult<TodoItemDTO>> PostTodoItem(TodoItemDTO todoDTO)
     {
       // this pass the userId from TodoItemDTO but can get from User.FindFirst("id")
-      // because this endpoint is from user authenticated
+      // because this endpoint is required that user authenticated
       var userId = User.FindFirst("id")!.Value;
       var todoItem = new TodoItem
       {

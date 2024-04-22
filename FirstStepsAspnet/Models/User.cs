@@ -10,6 +10,6 @@ namespace FirstStepsAspnet.Models
     public string Username { get; set; } = null!;
     public string Password { get; set; } = null!;
 
-    public List<TodoItem> TodoItems { get; set; } = [];
+    public virtual List<TodoItem> TodoItems { get; set; } = [];
   }
 }
